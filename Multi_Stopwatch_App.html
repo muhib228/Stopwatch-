@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi Hour Stopwatch</title>
+<style>
+body{
+    margin:0;
+    background:#0f1115;
+    color:white;
+    font-family:Arial,sans-serif;
+    padding:20px;
+}
+h1{
+    text-align:center;
+    font-size:32px;
+}
+button{
+    background:#1f6feb;
+    color:white;
+    border:none;
+    padding:10px 16px;
+    border-radius:14px;
+    font-size:16px;
+}
+.timer-card{
+    background:#1b1f27;
+    border-radius:28px;
+    padding:20px;
+    margin-top:20px;
+}
+.title{
+    width:100%;
+    background:transparent;
+    border:none;
+    color:white;
+    font-size:20px;
+    text-align:center;
+    margin-bottom:12px;
+}
+.display{
+    text-align:center;
+    font-size:64px;
+    font-weight:700;
+    letter-spacing:2px;
+    margin:18px 0;
+}
+.controls{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:10px;
+}
+.laps{
+    margin-top:16px;
+    max-height:140px;
+    overflow:auto;
+    color:#cfd6e4;
+}
+@media (orientation: landscape){
+    .display{
+        font-size:72px;
+    }
+}
+</style>
+</head>
+<body>
+
+<h1>Multi Stopwatch</h1>
+
+<div style="text-align:center">
+<button onclick="createTimer()">+ New Timer</button>
+</div>
+
+<div id="timers"></div>
+
+<script>
+let timers=[];
+
+function format(ms){
+    let total=Math.floor(ms/1000);
+    let h=Math.floor(total/3600);
+    let m=Math.floor((total%3600)/60);
+    let s=total%60;
+    return String(h).padStart(2,'0')+':' +
+           String(m).padStart(2,'0')+':' +
+           String(s).padStart(2,'0');
+}
+
+function createTimer(){
+    const id=Date.now();
+    const timer={
+        id:id,
+        elapsed:0,
+        running:false,
+        startTime:0,
+        laps:[]
+    };
+    timers.push(timer);
+
+    const card=document.createElement('div');
+    card.className='timer-card';
+    card.id='card-'+id;
+
+    card.innerHTML=
+    '<input class="title" value="Task '+timers.length+'">'+
+    '<div class="display" id="display-'+id+'">00:00:00</div>'+
+    '<div class="controls">'+
+    '<button onclick="toggle('+id+')" id="btn-'+id+'">Start</button>'+
+    '<button onclick="lap('+id+')">Lap</button>'+
+    '<button onclick="reset('+id+')">Reset</button>'+
+    '<button onclick="editTime('+id+')">Edit</button>'+
+    '</div>'+
+    '<div class="laps" id="laps-'+id+'"></div>';
+
+    document.getElementById('timers').appendChild(card);
+}
+
+function getTimer(id){
+    return timers.find(t=>t.id===id);
+}
+
+function toggle(id){
+    const t=getTimer(id);
+    if(!t.running){
+        t.running=true;
+        t.startTime=Date.now()-t.elapsed;
+        document.getElementById('btn-'+id).textContent='Pause';
+    }else{
+        t.running=false;
+        t.elapsed=Date.now()-t.startTime;
+        document.getElementById('btn-'+id).textContent='Start';
+    }
+}
+
+function reset(id){
+    const t=getTimer(id);
+    t.running=false;
+    t.elapsed=0;
+    t.laps=[];
+    document.getElementById('display-'+id).textContent='00:00:00';
+    document.getElementById('laps-'+id).innerHTML='';
+    document.getElementById('btn-'+id).textContent='Start';
+}
+
+function lap(id){
+    const t=getTimer(id);
+    const time=t.running ? Date.now()-t.startTime : t.elapsed;
+    t.laps.unshift(format(time));
+    document.getElementById('laps-'+id).innerHTML=
+        t.laps.map((v,i)=>'Lap '+(t.laps.length-i)+': '+v).join('<br>');
+}
+
+function editTime(id){
+    const t=getTimer(id);
+    const h=parseInt(prompt('Hours',0))||0;
+    const m=parseInt(prompt('Minutes',0))||0;
+    t.elapsed=(h*3600+m*60)*1000;
+    if(t.running){
+        t.startTime=Date.now()-t.elapsed;
+    }
+    document.getElementById('display-'+id).textContent=format(t.elapsed);
+}
+
+function update(){
+    timers.forEach(t=>{
+        if(t.running){
+            t.elapsed=Date.now()-t.startTime;
+            document.getElementById('display-'+t.id).textContent=format(t.elapsed);
+        }
+    });
+    requestAnimationFrame(update);
+}
+update();
+createTimer();
+</script>
+
+</body>
+</html>
